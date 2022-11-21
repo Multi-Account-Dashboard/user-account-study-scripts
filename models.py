@@ -8,7 +8,7 @@ def loadJSON(file):
     return data
 
 
-def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices=[], devices=[]):
+def model_from_file(file, password_access=[], secondary_methods_list=[], fallback_methods_list=[], devices=[]):
     modelData = loadJSON(file)
 
     # Expected model structure:
@@ -43,14 +43,26 @@ def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices
 
     secondary_methods = []
     # Generate list of second factors
-    for index in secondary_methods_indices:
-        secondary_methods.append(modelDataSecondaryList[index])
+    for method in secondary_methods_list:
+        obj = modelDataSecondaryList[method["id"]]
+        obj["devices"] = method["devices"]
+        secondary_methods.append(obj)
 
     # Generate list of fallback methods
     fallback_methods = []
-    for index in fallback_methods_indices:
-        fallback_methods.append(modelDataFallbackList[index])
+    for method in fallback_methods_list:
+        obj = modelDataFallbackList[method["id"]]
+        obj["devices"] = method["devices"]
+        fallback_methods.append(obj)
 
+    pw_devices = []
+    for access in password_access:
+        if access["type"] == "memory":
+            pw_devices.append("0")
+        elif access["type"] == "paper":
+            pw_devices.append("1")
+        elif access["type"] == "password_manager" or  access["type"] == "device_store":
+            pw_devices.append(access["devices"])
     authentication = {
         "type": "operator",
         "value": "&",
@@ -58,7 +70,7 @@ def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices
             "type": "authentication",
             "value": "knowledge",
             "score": 1,
-            "devices": [],
+            "devices": pw_devices,
             "label": "Password"
         },
             {
@@ -71,7 +83,7 @@ def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices
         "type": "authentication",
         "value": "knowledge",
         "score": 1,
-        "devices": [],
+        "devices": pw_devices,
         "label": "Password"
     }
 
