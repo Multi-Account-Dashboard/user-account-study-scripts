@@ -8,7 +8,7 @@ def loadJSON(file):
     return data
 
 
-def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices=[]):
+def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices=[], devices=[]):
     modelData = loadJSON(file)
 
     # Expected model structure:
@@ -38,7 +38,8 @@ def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices
     if modelData["graph"]["children"][0]["children"][1]["type"] == "operator" and modelData["graph"]["children"][0]["children"][1]["value"] == "|":
         modelDataFallbackList = modelData["graph"]["children"][0]["children"][1]["children"]
     else:
-        modelDataFallbackList = [modelData["graph"]["children"][0]["children"][1]]
+        modelDataFallbackList = [
+            modelData["graph"]["children"][0]["children"][1]]
 
     secondary_methods = []
     # Generate list of second factors
@@ -94,5 +95,6 @@ def model_from_file(file, secondary_methods_indices=[], fallback_methods_indices
                 ]
             } if len(fallback_methods) > 0 else authentication
             ]
-        }
+        },
+        "devices": devices
     }

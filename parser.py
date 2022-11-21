@@ -1,6 +1,5 @@
-import string
-
 ID_INDEX = 0
+DEVICES_INDEX = 5
 SERVICES_INDEX = 11
 
 GOOGLE_INDEX = 17
@@ -8,7 +7,16 @@ APPLE_INDEX = 35
 AMAZON_INDEX = 45
 FACEBOOK_INDEX = 58
 LINKEDIN_INDEX = 74
-TWITTER_INDEX = 84
+#TWITTER_INDEX = 84
+
+
+def parse_number(val):
+    if val == "None":
+        return 0
+    elif val == "4 or more":
+        return 4
+    else:
+        return int(val)
 
 
 def parse_index(row):
@@ -21,6 +29,16 @@ def parse_services(row):
         if not row[SERVICES_INDEX+i] == "":
             services.append(i)
     return services
+
+
+def parse_devices(row):
+    phone_numbers = parse_number(row[DEVICES_INDEX])
+    mobile_devices = parse_number(row[DEVICES_INDEX+1])
+    computers = parse_number(row[DEVICES_INDEX+2])
+    security_keys = parse_number(row[DEVICES_INDEX+3])
+    password_managers = parse_number(row[DEVICES_INDEX+4])
+    authenticator_apps = parse_number(row[DEVICES_INDEX+5])
+    return {"phone_numbers": phone_numbers, "mobile_devices": mobile_devices, "computers": computers, "security_keys": security_keys, "password_managers": password_managers, "authenticator_apps": authenticator_apps}
 
 
 def parse_Google_account(row):
@@ -71,6 +89,7 @@ def parse_Apple_account(row):
         fallback_methods_indices.append(0)
 
     return {"secondary_methods_indices": secondary_methods_indices, "fallback_methods_indices": fallback_methods_indices}
+
 
 def parse_Amazon_account(row):
     second_factor = False
@@ -129,10 +148,9 @@ def parse_LinkedIn_account(row):
     SECOND_FACTOR_METHODS_INDEX = LINKEDIN_INDEX+9
     LOGIN_OPTIONS_INDEX = LINKEDIN_INDEX+5
 
-
     if row[SECOND_FACTOR_ENABLED_INDEX] == "Yes":
         second_factor = True
-    
+
     if second_factor:
         for i in range(2):
             if not row[SECOND_FACTOR_METHODS_INDEX+i] == "":
@@ -144,20 +162,20 @@ def parse_LinkedIn_account(row):
 
     return {"secondary_methods_indices": secondary_methods_indices, "fallback_methods_indices": fallback_methods_indices}
 
-def parse_Twitter_account(row):
-    secondary_methods_indices = []
-    fallback_methods_indices = []
 
-    SECOND_FACTOR_METHODS_INDEX = TWITTER_INDEX+6
-    LOGIN_OPTIONS_INDEX = TWITTER_INDEX+14
-
-    
-    for i in range(4):
-        if not row[SECOND_FACTOR_METHODS_INDEX+i] == "":
-            secondary_methods_indices.append(i)
-
-    for i in range(2):
-        if not row[LOGIN_OPTIONS_INDEX+i] == "" and not row[LOGIN_OPTIONS_INDEX+i] == "None":
-            fallback_methods_indices.append(i)
-
-    return {"secondary_methods_indices": secondary_methods_indices, "fallback_methods_indices": fallback_methods_indices}
+#def parse_Twitter_account(row):
+#    secondary_methods_indices = []
+#    fallback_methods_indices = []
+#
+#    SECOND_FACTOR_METHODS_INDEX = TWITTER_INDEX+6
+#    LOGIN_OPTIONS_INDEX = TWITTER_INDEX+14
+#
+#    for i in range(4):
+#        if not row[SECOND_FACTOR_METHODS_INDEX+i] == "":
+#            secondary_methods_indices.append(i)
+#
+#    for i in range(2):
+#        if not row[LOGIN_OPTIONS_INDEX+i] == "" and not row[LOGIN_OPTIONS_INDEX+i] == "None":
+#            fallback_methods_indices.append(i)
+#
+#    return {"secondary_methods_indices": secondary_methods_indices, "fallback_methods_indices": fallback_methods_indices}
