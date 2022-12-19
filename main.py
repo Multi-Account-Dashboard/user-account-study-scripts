@@ -1,80 +1,82 @@
 import csv
 import json
-import parser
+import result_parser
 import models
+import sys
 
 
 def writeJSON(file, data):
     with open(file, "w") as outfile:
-        json.dump(data, outfile, indent=4)
+        json.dump(data, outfile, indent=2)
 
 
 def devices_to_list(devices):
-    l = ["Memory", "Paper"]
-    # for i in range(devices["phone_numbers"]):
+    l = []
     num_mobile = 0
     num_computer = 0
+    num_tablet = 0
     num_security_key = 0
 
     for v in devices:
-        if v["type"] == "mobile_device":
-            l.append("Mobile {0}".format(num_mobile))
+        label = ""
+        if v["type"] == "phone":
+            label = "Phone {0}".format(num_mobile+1)
             num_mobile += 1
-        elif v["type"] == "computer_device":
-            l.append("Computer {0}".format(num_computer))
+        elif v["type"] == "computer":
+            label = "Computer {0}".format(num_computer+1)
             num_computer += 1
-        elif v["type"] == "sec_key_device":
-            l.append("SecKey {0}".format(num_security_key))
+        elif v["type"] == "tablet":
+            label = "Tablet {0}".format(num_tablet+1)
+            num_tablet += 1
+        elif v["type"] == "security_key":
+            label = "SecKey {0}".format(num_security_key+1)
             num_security_key += 1
+        l.append({"id": v["id"], "label": label})
     return l
 
 
 def processRow(row):
-    id = parser.parse_index(row)
-    devices = parser.parse_devices(row)
-    devicesList = devices_to_list(devices)
-    services = parser.parse_services(row)
-    print("\nParticipant", id, devices, services)
+    id = result_parser.parse_index(row)
+    services = result_parser.parse_services(row)
+
+    graph_google = None
+    graph_apple = None
 
     for i in range(len(services)):
         if services[i] == "google":
-            account_setup = parser.parse_Google_account(row)
-            print(id, "Google", account_setup["password_access"])
-            d = models.model_from_file(
-                "models/google.json", account_setup["password_access"], account_setup["secondary_methods"], account_setup["fallback_methods"], devicesList)
-            writeJSON("results/" + id + "-google.json", d)
-
+            account_setup = result_parser.parse_Google_account(row)
+            graph_google = models.graph_from_file(
+                "models/graph-google.json", account_setup["auth_nodes"], account_setup["devices"])
+            writeJSON("results/" + id + "-google.json", graph_google)
+            graph_google["id"] = id
         elif services[i] == "apple":
-            account_setup = parser.parse_Apple_account(row)
-            print(id, "Apple", account_setup["password_access"])
-            d = models.model_from_file(
-                "models/apple.json", account_setup["password_access"], account_setup["secondary_methods"], account_setup["fallback_methods"], devicesList)
-            writeJSON("results/" + id + "-apple.json", d)
-        """
-        elif services[i] == 2:
-            account_setup = parser.parse_Amazon_account(row)
-            d = models.model_from_file(
-                "models/amazon.json", account_setup["secondary_methods"], account_setup["fallback_methods"], devicesList)
-            writeJSON("results/" + id + "-amazon.json", d)
-        elif services[i] == 3:
-            account_setup = parser.parse_Facebook_account(row)
-            d = models.model_from_file(
-                "models/facebook.json", account_setup["secondary_methods"], account_setup["fallback_methods"], devicesList)
-            writeJSON("results/" + id + "-facebook.json", d)
-        elif services[i] == 4:
-            account_setup = parser.parse_LinkedIn_account(row)
-            d = models.model_from_file(
-                "models/linkedin.json", account_setup["secondary_methods"], account_setup["fallback_methods"], devicesList)
-            writeJSON("results/" + id + "-linkedin.json", d)
-        """
+            account_setup = result_parser.parse_Apple_account(row)
+            account_setup["id"] = id
+            graph_apple = models.graph_from_file(
+                "models/graph-apple.json", account_setup["auth_nodes"], account_setup["devices"])
+            writeJSON("results/" + id + "-apple.json", graph_apple)
+            graph_apple["id"] = id
+    return {"google": graph_google, "apple": graph_apple}
 
+with open(sys.argv[1]) as csv_file:
+    graphs_google = []
+    graphs_apple = []
 
-with open('data/study-refactored-alpha.csv') as csv_file:
+    # Read CSV file with study results
     csv_reader = csv.reader(csv_file, delimiter=',')
+
+    # Iterate over table rows
     line_count = 0
     for row in csv_reader:
         if line_count == 0:
             line_count += 1
         else:
-            processRow(row)
+            result = processRow(row)
+            if not result["google"] == None:
+                graphs_google.append(result["google"])
+            if not result["apple"] == None:
+                graphs_apple.append(result["apple"])
             line_count += 1
+
+    writeJSON("results/results_google.json", graphs_google)
+    writeJSON("results/results_apple.json", graphs_apple)

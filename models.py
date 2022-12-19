@@ -7,106 +7,42 @@ def loadJSON(file):
     f.close()
     return data
 
+def contains_nodeId(nodeId, auth_nodes=[]):
+    for i, node in enumerate(auth_nodes):
+        if node["nodeId"] == nodeId:
+            return i
+    return -1
 
-def model_from_file(file, password_access=[], secondary_methods_list=[], fallback_methods_list=[], devices=[]):
+def process_node(node, auth_nodes=[]):
+    if not "children" in node.keys() or len(node["children"]) == 0:
+        # Verify if node exists in auth_nodes
+        index = contains_nodeId(node["nodeId"], auth_nodes)
+        if index > -1:
+            if "devices" in auth_nodes[index]:
+                node["devices"] = auth_nodes[index]["devices"]
+            return node
+        else:
+            return None
+    else:
+
+        children = []
+        for i, _ in enumerate(node["children"]):
+            result = process_node(node["children"][i], auth_nodes)
+            if not result == None:
+                children.append(result)
+        # Sanitize graph from unnecessary leaf nodes
+        if len(children) == 0 and node["type"] == "operator":
+            return None
+
+        node["children"] = children
+        return node
+
+
+def graph_from_file(file, auth_nodes=[], devices=[]):
     modelData = loadJSON(file)
 
-    # Expected model structure:
-    #
-    #                      root
-    #                       |
-    #            &                 (*Fallback)
-    #   Password   (*Secondary)
-    #
+    # Iterate over children, remove leaf nodes that do not appear in auth_nodes and create device mapping
+    modelData["graph"] = process_node(modelData["graph"], auth_nodes)
 
-    # Extract secondary methods from original model
-    rootName = modelData["graph"]["label"]
-
-    modelDataSecondaryList = []
-    if modelData["graph"]["children"][0]["children"][0]["type"] == "operator" and modelData["graph"]["children"][0]["children"][0]["value"] == "&":
-        # Multiple secondary options
-        if modelData["graph"]["children"][0]["children"][0]["children"][1]["type"] == "operator" and modelData["graph"]["children"][0]["children"][0]["children"][1]["value"] == "|":
-            modelDataSecondaryList = modelData["graph"]["children"][0]["children"][0]["children"][1]["children"]
-        # One secondary option
-        else:
-            modelDataSecondaryList = [
-                modelData["graph"]["children"][0]["children"][0]["children"][1]
-            ]
-
-    # Extract fallback methods from original model
-    modelDataFallbackList = []
-    if modelData["graph"]["children"][0]["children"][1]["type"] == "operator" and modelData["graph"]["children"][0]["children"][1]["value"] == "|":
-        modelDataFallbackList = modelData["graph"]["children"][0]["children"][1]["children"]
-    else:
-        modelDataFallbackList = [
-            modelData["graph"]["children"][0]["children"][1]]
-
-    secondary_methods = []
-    # Generate list of second factors
-    for method in secondary_methods_list:
-        obj = modelDataSecondaryList[method["id"]]
-        obj["devices"] = method["devices"]
-        secondary_methods.append(obj)
-
-    # Generate list of fallback methods
-    fallback_methods = []
-    for method in fallback_methods_list:
-        obj = modelDataFallbackList[method["id"]]
-        obj["devices"] = method["devices"]
-        fallback_methods.append(obj)
-
-    pw_devices = []
-    for access in password_access:
-        if access["type"] == "memory":
-            pw_devices.append("0")
-        elif access["type"] == "paper":
-            pw_devices.append("1")
-        elif access["type"] == "password_manager" or  access["type"] == "device_store":
-            pw_devices.append(access["devices"])
-    authentication = {
-        "type": "operator",
-        "value": "&",
-        "children": [{
-            "type": "authentication",
-            "value": "knowledge",
-            "score": 1,
-            "devices": pw_devices,
-            "label": "Password"
-        },
-            {
-            "type": "operator",
-            "value": "|",
-            "children": secondary_methods if len(secondary_methods) > 0 else []
-        } if len(secondary_methods) > 1 else secondary_methods[0]
-        ]
-    } if len(secondary_methods) > 0 else {
-        "type": "authentication",
-        "value": "knowledge",
-        "score": 1,
-        "devices": pw_devices,
-        "label": "Password"
-    }
-
-    if len(fallback_methods) > 0:
-        fallback = {
-            "type": "operator",
-            "value": "|",
-            "children":  fallback_methods
-        } if len(fallback_methods) > 1 else fallback_methods[0]
-
-    return {
-        "graph": {
-            "type": "account",
-            "label": rootName,
-            "children": [{
-                "type": "operator",
-                "value": "|",
-                "children": [
-                    authentication,
-                    fallback
-                ]
-            } if len(fallback_methods) > 0 else authentication
-            ]
-        },
-        "devices": devices
-    }
+    modelData["devices"] = devices
+    return modelData
