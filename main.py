@@ -9,12 +9,13 @@ def writeJSON(file, data):
     with open(file, "w") as outfile:
         json.dump(data, outfile, indent=2)
 
-
+"""
 def devices_to_list(devices):
     l = []
     num_mobile = 0
     num_computer = 0
     num_tablet = 0
+    num_smart_watch = 0
     num_security_key = 0
 
     for v in devices:
@@ -28,12 +29,15 @@ def devices_to_list(devices):
         elif v["type"] == "tablet":
             label = "Tablet {0}".format(num_tablet+1)
             num_tablet += 1
+        elif v["type"] == "smart_watch":
+            label = "SmartWatch {0}".format(num_smart_watch+1)
+            num_smart_watch += 1
         elif v["type"] == "security_key":
             label = "SecKey {0}".format(num_security_key+1)
             num_security_key += 1
         l.append({"id": v["id"], "label": label})
     return l
-
+"""
 
 def processRow(row):
     id = result_parser.parse_index(row)
