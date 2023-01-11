@@ -1,10 +1,8 @@
 ID_INDEX = 0
 DEVICES_INDEX = 10
-SERVICES_GOOGLE_INDEX = 22
-SERVICES_APPLE_INDEX = 23
 
-GOOGLE_INDEX = 24
-APPLE_INDEX = 86
+GOOGLE_INDEX = 22
+APPLE_INDEX = 22
 
 DEVICES = ["p1", "p2", "p3", "c1", "c2", "c3", "t1", "t2","sw1", "sw2", "s1", "s2"]
 
@@ -20,14 +18,6 @@ def parse_number(val):
 
 def parse_index(row):
     return row[ID_INDEX]
-
-def parse_services(row):
-    services = []
-    if not row[SERVICES_GOOGLE_INDEX] == "":
-        services.append("google")
-    if not row[SERVICES_APPLE_INDEX] == "":
-        services.append("apple")
-    return services
 
 def parse_devices(row):
     devices = []
@@ -170,12 +160,12 @@ def parse_Apple_account(row):
     PASSWORD_ACCESS_INDEX = APPLE_INDEX+1
     TRUSTED_PHONE_NUMBERS_INDEX = APPLE_INDEX+21
     TRUSTED_DEVICES_INDEX = APPLE_INDEX+24
-    RECOVERY_METHODS_INDEX = APPLE_INDEX+34
+    RECOVERY_METHODS_INDEX = APPLE_INDEX+36
 
     auth_nodes.append(parse_password_access(row, PASSWORD_ACCESS_INDEX))
 
     trusted_devices = parse_device_selection(
-        row, TRUSTED_DEVICES_INDEX, 10)
+        row, TRUSTED_DEVICES_INDEX, 12)
     if len(trusted_devices) > 0:
         auth_nodes.append({"nodeId": "trusted_device", "devices": trusted_devices})
 

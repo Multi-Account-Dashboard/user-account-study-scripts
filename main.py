@@ -39,30 +39,35 @@ def devices_to_list(devices):
     return l
 """
 
-def processRow(row):
+def processRow(row,service):
     id = result_parser.parse_index(row)
-    services = result_parser.parse_services(row)
 
     graph_google = None
     graph_apple = None
 
-    for i in range(len(services)):
-        if services[i] == "google":
-            account_setup = result_parser.parse_Google_account(row)
-            graph_google = models.graph_from_file(
-                "models/graph-google.json", account_setup["auth_nodes"], account_setup["devices"])
-            writeJSON("results/" + id + "-google.json", graph_google)
-            graph_google["id"] = id
-        elif services[i] == "apple":
-            account_setup = result_parser.parse_Apple_account(row)
-            account_setup["id"] = id
-            graph_apple = models.graph_from_file(
-                "models/graph-apple.json", account_setup["auth_nodes"], account_setup["devices"])
-            writeJSON("results/" + id + "-apple.json", graph_apple)
-            graph_apple["id"] = id
+    if service == "google":
+        account_setup = result_parser.parse_Google_account(row)
+        graph_google = models.graph_from_file(
+            "models/graph-google.json", account_setup["auth_nodes"], account_setup["devices"])
+        writeJSON("results/" + id + "-google.json", graph_google)
+        graph_google["id"] = id
+    elif service == "apple":
+        account_setup = result_parser.parse_Apple_account(row)
+        account_setup["id"] = id
+        graph_apple = models.graph_from_file(
+            "models/graph-apple.json", account_setup["auth_nodes"], account_setup["devices"])
+        writeJSON("results/" + id + "-apple.json", graph_apple)
+        graph_apple["id"] = id
     return {"google": graph_google, "apple": graph_apple}
 
+if len(sys.argv) < 3:
+    print("Missing arguments")
+    sys.exit(1)
+
 with open(sys.argv[1]) as csv_file:
+
+    service = sys.argv[2].lower()
+
     graphs_google = []
     graphs_apple = []
 
@@ -75,12 +80,13 @@ with open(sys.argv[1]) as csv_file:
         if line_count == 0:
             line_count += 1
         else:
-            result = processRow(row)
+            result = processRow(row,service)
             if not result["google"] == None:
                 graphs_google.append(result["google"])
             if not result["apple"] == None:
                 graphs_apple.append(result["apple"])
             line_count += 1
-
-    writeJSON("results/results_google.json", graphs_google)
-    writeJSON("results/results_apple.json", graphs_apple)
+    if service == "google":
+        writeJSON("results/results_google.json", graphs_google)
+    elif service == "apple":
+        writeJSON("results/results_apple.json", graphs_apple)
