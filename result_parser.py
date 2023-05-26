@@ -82,7 +82,7 @@ def parse_password_access(row, start_index):
     if not row[DEVICE_STORE_INDEX] == "":
         password_access["devices"] += parse_device_selection(
             row, DEVICE_STORE_DEVICES_INDEX, 8)
-
+    password_access["devices"] = list(dict.fromkeys(password_access["devices"]))
     return password_access
 
 
@@ -165,7 +165,7 @@ def parse_Apple_account(row):
     auth_nodes.append(parse_password_access(row, PASSWORD_ACCESS_INDEX))
 
     trusted_devices = parse_device_selection(
-        row, TRUSTED_DEVICES_INDEX, 12)
+        row, TRUSTED_DEVICES_INDEX, 10)
     if len(trusted_devices) > 0:
         auth_nodes.append({"nodeId": "trusted_device", "devices": trusted_devices})
 
